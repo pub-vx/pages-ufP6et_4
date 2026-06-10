@@ -19,25 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare output
-        run: |
-          mkdir -p output
-          cp -r * output/ || true
-          rm -f output/.github
-          rm -rf output/.github
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-      - name: Rewrite absolute /assets/ refs to relative (GitHub Pages project site)
-        run: |
-          find output -maxdepth 2 -name 'index.html' -exec sed -i \
-            -e 's|"/assets/|"./assets/|g' \
-            -e "s|'/assets/|'./assets/|g" {} +
-          # vite `__vitePreload` builds chunk URLs as `base + dep` where base is
-          # baked in at build time. Prebuilt bundles default to base "/" and ship
-          # a tiny helper:  function(x){return"/"+x}  — that prefix breaks under
-          # GitHub Pages project paths (/pages-<slug>/...). Rewrite that single
-          # helper signature so chunks resolve relative to the document URL.
-          find output -name '*.js' -exec sed -i -E \
-            's|function\(([a-z_$])\)\{return"/"\+\1\}|function(\1){return"./"+\1}|g' {} +
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Prepare output
+        run: mv dist output
+
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
