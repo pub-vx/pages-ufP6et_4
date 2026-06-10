@@ -1,0 +1,253 @@
+/* ──────────────────────────────────────────────────────────────────────────
+ * responsive.css — 해외투어 Desktop-First 반응형 레이어
+ *
+ * 카카오골프예약 웹 포털(booking-portal)의 홈 반응형 패턴을 1:1 이식 가능하도록
+ * "순수 CSS @media" 로만 작성한다. (Tailwind sm:/md:/lg: 미사용)
+ *
+ *  - 단일 브레이크포인트: 1120px (포털 #wrap #header / #container 와 동일)
+ *  - 모바일/태블릿(≤1119px): 기존 프로토타입 동작 그대로 (가로 스크롤)
+ *  - 데스크톱(≥1120px): 콘텐츠 max-width 1080px 센터링, 카드 리스트 2열 grid,
+ *                       헤더 타이틀 행 48→96px
+ *
+ * 포털 대응:
+ *   .rt-content-wrap   ↔  #wrap #container          (width:100%; max-width:1080px; margin:0 auto)
+ *   .rt-section-pad    ↔  #container .container_inner (padding 20px → 0 @1120)
+ *   .rt-header-inner   ↔  #header .header_inner       (max-width:1080px; margin:0 auto; padding:0 @1120)
+ *   .rt-header-title-row ↔ #header                    (height:96px @1120)
+ *   .rt-grid           ↔  .realtime_join_list         (grid-template-columns:repeat(2,1fr) @1120)
+ *
+ * 이 파일은 Tailwind 레이어 밖(unlayered)이라 Tailwind 유틸(@layer utilities)을 항상 덮는다.
+ * 변경은 전부 presentational — 데이터/로직과 무관.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --rt-content-max: 1080px;   /* 데스크톱 콘텐츠 폭 상한 (포털 동일) */
+  --rt-gutter: 20px;          /* 모바일 좌우 거터 (== Tailwind px-5) */
+  /* 헤더 타이틀 행 증가분: 데스크톱 96px − 모바일 54px = 42px.
+   * 타이틀 행 아래에 sticky 로 붙는 모든 요소의 top/scroll-margin 에 이 값을 더한다.
+   * (모바일 헤더 높이는 포털 #header 54px 기준) */
+  --rt-header-delta: 0px;
+}
+
+@media (min-width: 1120px) {
+  :root {
+    --rt-header-delta: 42px;
+  }
+}
+
+/* ── 1) App 셸 — 430px 프레임 대체 ─────────────────────────────────────── */
+.rt-app-shell {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0 auto;
+  position: relative;
+  background: #f9fafb;          /* 기존 mobile-container 배경 */
+}
+@media (min-width: 1120px) {
+  /* 데스크톱은 full-bleed 흰 배경 위에 섹션이 스스로 폭을 잡는다 (포털 동일) */
+  .rt-app-shell {
+    background: #ffffff;
+  }
+}
+
+/* ── 2) 콘텐츠 래퍼 — 데스크톱 1080 센터 (포털 #container 와 동일, 무조건 적용) ─ */
+.rt-content-wrap {
+  width: 100%;
+  max-width: var(--rt-content-max);
+  margin: 0 auto;
+}
+
+/* ── 3) 반응형 그리드 — 포털 .realtime_join_list 대응 ─────────────────────
+ *  모바일: 가로 스크롤 레일 (기존 flex/overflow 패턴과 동일)
+ *  데스크톱: 2열 grid. 자식의 고정 폭(flex-shrink-0 w-[200px] 등)은
+ *           .rt-grid > * 규칙으로 중화 → 카드 JSX 무수정. */
+.rt-grid {
+  display: flex;
+  gap: 12px;                    /* == Tailwind gap-3 */
+  overflow-x: auto;
+  padding-left: var(--rt-gutter);
+  padding-right: var(--rt-gutter);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rt-grid::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 1120px) {
+  .rt-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    overflow: visible;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .rt-grid > * {
+    width: auto !important;     /* flex-shrink-0 w-[..] 중화 */
+    flex-shrink: 1;
+    min-width: 0;
+  }
+}
+
+/* ── 3a) MD추천 레일 — 포털 홈 "임박특가"(.deal_grid) 대응 ────────────────
+ *  모바일: 가로 스와이프 1줄(.rt-grid 와 동일 패턴, 카드 고정폭 유지)
+ *  데스크톱(≥1120): 3열 grid 다중 행 — 화면을 꽉 채워 "물량" 노출.
+ *                   카드 고정폭(w-[200px])은 .rt-deal-grid > * 로 중화하여 1fr 채움.
+ *  (마스터: .deal_grid .swiper-wrapper → grid repeat(3,1fr); gap:20px 10px; max-width:1080) */
+.rt-deal-grid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-left: var(--rt-gutter);
+  padding-right: var(--rt-gutter);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.rt-deal-grid::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 1120px) {
+  .rt-deal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 16px;
+    overflow: visible;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .rt-deal-grid > * {
+    width: auto !important;       /* flex-shrink-0 w-[200px] 중화 → 컬럼 채움 */
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  /* 데스크톱에선 카드가 넓어지므로 썸네일도 키워(120→184) 비례 맞춤 */
+  .rt-deal-thumb {
+    height: 184px !important;
+  }
+}
+
+/* ── 3b) 세로 스택 → 2열 그리드 ─────────────────────────────────────────
+ *  모바일: 세로 1열 스택(기존 flex-col 패턴과 동일, 스크롤 없음)
+ *  데스크톱: 2열 grid. .rt-grid 와 달리 가로 스크롤이 아니라 세로 리스트가 기반이다.
+ *  (PackageCard 묶음, 예약 카드 등 — 폭 100% 카드가 그리드 셀로 전환) */
+.rt-grid-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (min-width: 1120px) {
+  .rt-grid-stack {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+/* ── 4) 헤더 — 타이틀 행 48→96px, 내부 1080 센터 ─────────────────────────
+ *  .rt-header-inner: 타이틀 행(상대좌표 컨테이너)에 적용. 데스크톱에서 1080 센터.
+ *  .rt-header-title-row: 데스크톱에서 높이 96px. (모바일은 Tailwind h-12=48px 유지) */
+@media (min-width: 1120px) {
+  .rt-header-inner {
+    max-width: var(--rt-content-max);
+    margin: 0 auto;
+  }
+  .rt-header-title-row {
+    height: 96px;
+  }
+}
+
+/* ── 5) 섹션 거터 — 모바일 20px → 데스크톱 0 (센터링 내부 이중 패딩 방지) ──
+ *  포털 #container .container_inner 패턴: 모바일은 좌우 20px 거터, 데스크톱(≥1120)은
+ *  1080 센터 밴드라 0. (unlayered 라 Tailwind px-* 유틸을 덮음) */
+.rt-section-pad {
+  padding-left: var(--rt-gutter);
+  padding-right: var(--rt-gutter);
+}
+@media (min-width: 1120px) {
+  .rt-section-pad {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* ── 6) Sticky 오프셋 — 타이틀 행 증가분(--rt-header-delta)만큼 자동 보정 ──
+ *  각 sticky 요소의 모바일 기준값에 delta 를 더한다.
+ *  (모바일 헤더 54px 기준. 데스크톱은 +delta 로 96px 기준 자동 보정)
+ *   top-12      → .rt-sticky-top-12   (헤더 바로 아래)
+ *   top-[96px]  → .rt-sticky-top-90
+ *   scroll-mt   → .rt-scroll-mt-134 */
+.rt-sticky-top-12 {
+  position: sticky;
+  top: calc(54px + var(--rt-header-delta));
+}
+.rt-sticky-top-90 {
+  position: sticky;
+  top: calc(96px + var(--rt-header-delta));
+}
+.rt-scroll-mt-134 {
+  scroll-margin-top: calc(140px + var(--rt-header-delta));
+}
+/* 골프장 상세 날짜 strip — AppHeader(54) + CourseTabBar(69, 포털 .tab_navigation 스타일) = 123px */
+.rt-sticky-course-date {
+  position: sticky;
+  top: calc(123px + var(--rt-header-delta));
+}
+
+/* ── 6b) 바텀시트 → 데스크톱 중앙 모달 (포털 .bottom_sheet @1120 패턴) ────
+ *  모바일: 하단 고정 바텀시트(기존 그대로)
+ *  데스크톱(≥1120): 화면 중앙 모달 — left/top 50% + translate(-50%), 폭 고정,
+ *                   높이 auto(max 80vh 스크롤), 전체 라운드.
+ *  공용 ui/sheet 의 side="bottom" 콘텐츠에 적용. */
+@media (min-width: 1120px) {
+  .rt-sheet-bottom {
+    left: 50% !important;
+    right: auto !important;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: 420px !important;
+    max-width: 420px !important;
+    height: auto !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+    border-top: 0 !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* ── 6c) Full-bleed — 1080 캡 부모 안에서도 뷰포트 전체 폭으로 확장 ───────
+ *  포털 #footer 처럼 푸터 bg 를 좌우 꽉 차게. 내부 콘텐츠는 .rt-content-wrap 로 1080 센터.
+ *  100vw 가 세로 스크롤바를 포함해 가로 오버플로우를 만들 수 있어 body overflow-x:hidden 로 가드. */
+.rt-full-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+html, body {
+  overflow-x: hidden;
+}
+
+/* ── 6d) 시트/모달 오버레이 exit 타이밍 — tw-animate animate-out 의 animation-duration 을
+ *  콘텐츠 close(300ms)와 일치시켜 dim 과 모달이 함께 사라지게 함. */
+[data-slot="sheet-overlay"][data-state="closed"] {
+  animation-duration: 300ms !important;
+}
+[data-slot="sheet-overlay"][data-state="open"] {
+  animation-duration: 500ms !important;
+}
+
+/* ── 7) 플로팅/고정 요소 — 콘텐츠 폭 센터 밴드로 재앵커 ───────────────────
+ *  430px 프레임에 의존하던 fixed 하단 CTA·토스트·지도 오버레이용.
+ *  모바일은 480px, 데스크톱은 1080px 로 센터. */
+.rt-floating-cap {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+}
+@media (min-width: 1120px) {
+  .rt-floating-cap {
+    max-width: var(--rt-content-max);
+  }
+}
